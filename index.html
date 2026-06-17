@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0a0a0f"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Extra Stickers"/>
+  <link rel="manifest" href="manifest.json"/>
+  <title>Extra Stickers · Mundial 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a0f;--surface:#13131a;--border:#1e1e2a;--text:#f0f0f5;--muted:#55556a;--accent:#e8c840;
+      --miss-bg:#0a0a0f;--miss-txt:#34344a;
+      --have-bg:#0d2a18;--have-brd:#1a5c30;--have-txt:#4dda80;
+      --dup-bg:#2a1a08;--dup-brd:#c87010;--dup-txt:#f4a030;
+      --base-color:#a78bfa;
+      --tab-h:62px;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+    #app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto}
+
+    .header{padding:16px 18px 10px;padding-top:calc(16px + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+    .hrow1{display:flex;align-items:flex-end;justify-content:space-between}
+    .htitle{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;color:var(--accent);line-height:1}
+    .hsub{font-size:10px;color:var(--muted);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px}
+    .hpct-num{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent);line-height:1;text-align:right}
+    .hpct-lbl{font-size:10px;color:var(--muted);text-align:right}
+    .stats{display:flex;gap:6px;margin-top:10px}
+    .stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center}
+    .stat-n{font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1}
+    .stat-l{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+    .n-green{color:var(--have-txt)}.n-muted{color:var(--muted)}.n-orange{color:var(--dup-txt)}.n-yellow{color:var(--accent)}
+    .prog-wrap{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:10px}
+    .prog-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease}
+
+    .filters{display:flex;gap:6px;padding:10px 18px;overflow-x:auto;scrollbar-width:none;background:var(--bg);border-bottom:1px solid var(--border)}
+    .filters::-webkit-scrollbar{display:none}
+    .ftab{flex-shrink:0;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+    .ftab.on{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+
+    .scroll{flex:1;overflow-y:auto;padding:12px 14px;padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);-webkit-overflow-scrolling:touch}
+
+    .pcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden}
+    .phead{display:flex;align-items:center;gap:10px;padding:11px 14px 9px}
+    .pflag{font-size:22px;line-height:1;flex-shrink:0}
+    .pinfo{flex:1}
+    .pname{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.5px;line-height:1.1}
+    .pteam{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+    .psumm{font-size:11px;text-align:right;line-height:1.5}
+    .srows{border-top:1px solid var(--border)}
+    .srow{display:flex;align-items:center;gap:8px;padding:8px 14px}
+    .srow.miss{background:var(--miss-bg)}.srow.have{background:var(--have-bg)}.srow.dup{background:var(--dup-bg)}
+    .vdot{width:10px;height:10px;border-radius:50%;background:var(--base-color);flex-shrink:0;box-shadow:0 0 6px rgba(167,139,250,.5)}
+    .vdot.dim{opacity:.2;box-shadow:none}
+    .vicon{font-size:18px;line-height:1;flex-shrink:0;width:22px;text-align:center}
+    .clbl{font-size:12px;font-weight:500;flex:1}
+    .clbl.miss{color:var(--miss-txt)}.clbl.have{color:var(--have-txt)}.clbl.dup{color:var(--dup-txt)}
+    .badge{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;padding:2px 7px;border-radius:20px;flex-shrink:0}
+    .badge.miss{background:var(--border);color:var(--muted)}
+    .badge.have{background:var(--have-brd);color:var(--have-txt)}
+    .badge.dup{border:1px solid var(--dup-brd);color:var(--dup-txt)}
+    .ctr{display:flex;align-items:center;gap:5px}
+    .cbtn{width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:transform .1s;user-select:none;-webkit-user-select:none;font-family:'DM Sans',sans-serif}
+    .cbtn:active{transform:scale(.85)}
+    .cbtn.minus{background:var(--border);color:var(--muted)}
+    .cbtn.minus:disabled{opacity:.2;cursor:default}
+    .cbtn.plus-miss{background:#2a2a3a;color:var(--muted)}
+    .cbtn.plus-have{background:var(--have-brd);color:var(--have-txt)}
+    .cbtn.plus-dup{background:var(--dup-brd);color:#000}
+    .cval{font-family:'Bebas Neue',sans-serif;font-size:20px;min-width:20px;text-align:center;line-height:1}
+    .cval.miss{color:var(--miss-txt)}.cval.have{color:var(--have-txt)}.cval.dup{color:var(--dup-txt)}
+
+    .btabs{display:flex;background:var(--surface);border-top:1px solid var(--border);height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);position:sticky;bottom:0;z-index:20}
+    .btab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:10px;font-family:'DM Sans',sans-serif;transition:color .15s;padding:0;user-select:none}
+    .btab.on{color:var(--accent)}
+    .bicon{font-size:20px;line-height:1}
+
+    .sec-title{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;padding:14px 2px 8px}
+    .ritem{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px}
+    .rflag{font-size:17px}.rname{flex:1;font-size:13px;font-weight:500}
+    .rvars{display:flex;gap:5px;align-items:center}
+    .rv-base{width:9px;height:9px;border-radius:50%;background:var(--base-color);opacity:.18;transition:opacity .2s}
+    .rv-base.f{opacity:1;box-shadow:0 0 5px rgba(167,139,250,.6)}
+    .rv-base.d{opacity:1;box-shadow:0 0 0 2px var(--dup-brd),0 0 5px rgba(167,139,250,.6)}
+    .rv-medal{font-size:13px;line-height:1;opacity:.18;filter:grayscale(1)}
+    .rv-medal.f{opacity:1;filter:none}
+    .rv-medal.d{opacity:1;filter:none;text-shadow:0 0 4px var(--dup-brd)}
+
+    .icard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px}
+    .ihead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .iname{font-family:'Bebas Neue',sans-serif;font-size:17px}
+    .irow{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+    .iclbl{font-size:12px;color:var(--muted);width:52px;flex-shrink:0}
+    .icnt{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--dup-txt)}
+    .iext{font-size:11px;color:var(--muted)}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+    .chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--dup-bg);border:1px solid var(--dup-brd);color:var(--dup-txt)}
+    .copy-btn{width:100%;padding:10px;background:var(--accent);color:#000;border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer;margin-bottom:8px;transition:opacity .15s}
+    .copy-btn:active{opacity:.8}
+    .copy-ok{text-align:center;font-size:12px;color:var(--have-txt);padding:4px;display:none}
+    .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+    .empty-i{font-size:46px;margin-bottom:12px}
+    .empty-t{font-size:13px;line-height:1.6}
+    .screen{display:none}.screen.on{display:block}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="hrow1">
+      <div><div class="htitle">Extra Stickers</div><div class="hsub">Panini · Mundial 2026</div></div>
+      <div><div class="hpct-num" id="hpct">0%</div><div class="hpct-lbl">completado</div></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-n n-green" id="s-tengo">0</div><div class="stat-l">Tengo</div></div>
+      <div class="stat"><div class="stat-n n-muted" id="s-faltan">80</div><div class="stat-l">Faltan</div></div>
+      <div class="stat"><div class="stat-n n-orange" id="s-reps">0</div><div class="stat-l">Repetidos</div></div>
+      <div class="stat"><div class="stat-n n-yellow" id="s-jugadores">0</div><div class="stat-l">Jugadores</div></div>
+    </div>
+    <div class="prog-wrap"><div class="prog-bar" id="prog" style="width:0%"></div></div>
+  </div>
+
+  <div class="filters" id="filters">
+    <button class="ftab on" data-f="todos">Todos</button>
+    <button class="ftab" data-f="tengo">Tengo</button>
+    <button class="ftab" data-f="faltan">Me faltan</button>
+    <button class="ftab" data-f="dup">Repetidos</button>
+  </div>
+
+  <div class="scroll" id="scroll">
+    <div class="screen on" id="sc-coleccion"></div>
+    <div class="screen" id="sc-resumen"></div>
+    <div class="screen" id="sc-intercambio"></div>
+  </div>
+
+  <div class="btabs">
+    <button class="btab on" data-tab="coleccion"><span class="bicon">⭐</span><span>Colección</span></button>
+    <button class="btab" data-tab="resumen"><span class="bicon">📋</span><span>Resumen</span></button>
+    <button class="btab" data-tab="intercambio"><span class="bicon">🔄</span><span>Intercambio</span></button>
+  </div>
+</div>
+
+<script>
+const PLAYERS = [
+  {id:'ARG',name:'Lionel Messi',        team:'Argentina',      flag:'🇦🇷'},
+  {id:'BEL',name:'Jérémy Doku',         team:'Bélgica',        flag:'🇧🇪'},
+  {id:'BRA',name:'Vinícius Júnior',     team:'Brasil',         flag:'🇧🇷'},
+  {id:'CAN',name:'Alphonso Davies',     team:'Canadá',         flag:'🇨🇦'},
+  {id:'COL',name:'Luis Díaz',           team:'Colombia',       flag:'🇨🇴'},
+  {id:'CRO',name:'Luka Modrić',         team:'Croacia',        flag:'🇭🇷'},
+  {id:'ECU',name:'Moisés Caicedo',      team:'Ecuador',        flag:'🇪🇨'},
+  {id:'EGY',name:'Mohamed Salah',       team:'Egipto',         flag:'🇪🇬'},
+  {id:'ENG',name:'Jude Bellingham',     team:'Inglaterra',     flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},
+  {id:'FRA',name:'Kylian Mbappé',       team:'Francia',        flag:'🇫🇷'},
+  {id:'GER',name:'Florian Wirtz',       team:'Alemania',       flag:'🇩🇪'},
+  {id:'KOR',name:'Heung-min Son',       team:'Corea del Sur',  flag:'🇰🇷'},
+  {id:'MEX',name:'Raúl Jiménez',        team:'México',         flag:'🇲🇽'},
+  {id:'MAR',name:'Achraf Hakimi',       team:'Marruecos',      flag:'🇲🇦'},
+  {id:'NED',name:'Cody Gakpo',          team:'Países Bajos',   flag:'🇳🇱'},
+  {id:'NOR',name:'Erling Haaland',      team:'Noruega',        flag:'🇳🇴'},
+  {id:'POR',name:'Cristiano Ronaldo',   team:'Portugal',       flag:'🇵🇹'},
+  {id:'ESP',name:'Lamine Yamal',        team:'España',         flag:'🇪🇸'},
+  {id:'URU',name:'Federico Valverde',   team:'Uruguay',        flag:'🇺🇾'},
+  {id:'USA',name:'Christian Pulisic',   team:'Estados Unidos', flag:'🇺🇸'},
+];
+const COLORS = [
+  {id:'base',   label:'Base',   icon:'dot'},
+  {id:'bronze', label:'Bronce', icon:'🥉'},
+  {id:'silver', label:'Plata',  icon:'🥈'},
+  {id:'gold',   label:'Oro',    icon:'🥇'},
+];
+const KEY = 'panini_extra_2026';
+
+let data = {};
+let activeTab = 'coleccion';
+let activeFilter = 'todos';
+let savedScroll = 0;
+
+function buildEmpty() {
+  const d = {};
+  PLAYERS.forEach(p => { d[p.id] = {}; COLORS.forEach(c => { d[p.id][c.id] = 0; }); });
+  return d;
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return buildEmpty();
+    const parsed = JSON.parse(raw);
+    const d = buildEmpty();
+    PLAYERS.forEach(p => COLORS.forEach(c => {
+      // migración: 'regular' → 'base'
+      if (c.id === 'base' && typeof parsed[p.id]?.regular === 'number' && parsed[p.id]?.base === undefined) {
+        d[p.id].base = parsed[p.id].regular;
+      } else if (typeof parsed[p.id]?.[c.id] === 'number') {
+        d[p.id][c.id] = parsed[p.id][c.id];
+      }
+    }));
+    return d;
+  } catch { return buildEmpty(); }
+}
+
+function saveData() {
+  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {}
+}
+
+const stateOf = n => n === 0 ? 'miss' : n === 1 ? 'have' : 'dup';
+
+function calcStats() {
+  let tengo = 0, reps = 0, jugadores = 0;
+  PLAYERS.forEach(p => {
+    let all = true;
+    COLORS.forEach(c => {
+      const n = data[p.id][c.id];
+      if (n >= 1) tengo++;
+      if (n > 1)  reps += n - 1;
+      if (n === 0) all = false;
+    });
+    if (all) jugadores++;
+  });
+  return { tengo, reps, jugadores, faltan: 80 - tengo };
+}
+
+function renderStats() {
+  const s = calcStats();
+  const pct = Math.round(s.tengo / 80 * 100);
+  document.getElementById('hpct').textContent = pct + '%';
+  document.getElementById('s-tengo').textContent = s.tengo;
+  document.getElementById('s-faltan').textContent = s.faltan;
+  document.getElementById('s-reps').textContent = s.reps;
+  document.getElementById('s-jugadores').textContent = s.jugadores;
+  document.getElementById('prog').style.width = pct + '%';
+}
+
+function iconHtml(color, st) {
+  if (color.icon === 'dot') {
+    return `<div class="vdot${st === 'miss' ? ' dim' : ''}"></div>`;
+  }
+  const style = st === 'miss' ? 'opacity:.18;filter:grayscale(1)' : 'opacity:1;filter:none';
+  return `<span class="vicon" style="${style}">${color.icon}</span>`;
+}
+
+function filteredPlayers() {
+  if (activeFilter === 'tengo')  return PLAYERS.filter(p => COLORS.some(c => data[p.id][c.id] >= 1));
+  if (activeFilter === 'faltan') return PLAYERS.filter(p => COLORS.every(c => data[p.id][c.id] === 0));
+  if (activeFilter === 'dup')    return PLAYERS.filter(p => COLORS.some(c => data[p.id][c.id] > 1));
+  return PLAYERS;
+}
+
+function renderColeccion() {
+  const el = document.getElementById('sc-coleccion');
+  const players = filteredPlayers();
+  if (!players.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-i">🔍</div><div class="empty-t">No hay figuritas en este filtro todavía.</div></div>`;
+    return;
+  }
+  el.innerHTML = players.map(p => {
+    const haveCount = COLORS.filter(c => data[p.id][c.id] >= 1).length;
+    const dupCount  = COLORS.filter(c => data[p.id][c.id] > 1).length;
+    const total     = COLORS.reduce((a, c) => a + data[p.id][c.id], 0);
+    const summ = total === 0
+      ? `<span style="color:var(--muted)">Sin stickers</span>`
+      : `${haveCount > 0 ? `<div style="color:var(--have-txt)">${haveCount}/4 variantes</div>` : ''}${dupCount > 0 ? `<div style="color:var(--dup-txt)">${dupCount} repetida${dupCount > 1 ? 's' : ''}</div>` : ''}`;
+    const rows = COLORS.map(c => {
+      const n = data[p.id][c.id];
+      const st = stateOf(n);
+      const badge = st === 'miss' ? 'Falta' : st === 'have' ? 'Tengo 1' : `×${n}`;
+      const plusCls = st === 'miss' ? 'plus-miss' : st === 'have' ? 'plus-have' : 'plus-dup';
+      return `<div class="srow ${st}">
+        ${iconHtml(c, st)}
+        <span class="clbl ${st}">${c.label}</span>
+        <span class="badge ${st}">${badge}</span>
+        <div class="ctr">
+          <button class="cbtn minus" ${n === 0 ? 'disabled' : ''} data-p="${p.id}" data-c="${c.id}" data-d="-1">−</button>
+          <span class="cval ${st}">${n}</span>
+          <button class="cbtn ${plusCls}" data-p="${p.id}" data-c="${c.id}" data-d="1">+</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="pcard">
+      <div class="phead">
+        <span class="pflag">${p.flag}</span>
+        <div class="pinfo"><div class="pname">${p.name}</div><div class="pteam">${p.team}</div></div>
+        <div class="psumm">${summ}</div>
+      </div>
+      <div class="srows">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderResumen() {
+  const el = document.getElementById('sc-resumen');
+  const conS = PLAYERS.filter(p => COLORS.some(c => data[p.id][c.id] >= 1));
+  const sinS = PLAYERS.filter(p => COLORS.every(c => data[p.id][c.id] === 0));
+  if (!conS.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-i">⭐</div><div class="empty-t">Acá vas a ver el resumen de tu colección a medida que registrés tus Extra Stickers.</div></div>`;
+    return;
+  }
+  const section = (title, list) => {
+    if (!list.length) return '';
+    return `<div class="sec-title">${title}</div>` + list.map(p => {
+      const dots = COLORS.map(c => {
+        const n = data[p.id][c.id];
+        if (c.icon === 'dot') return `<div class="rv-base${n >= 1 ? ' f' : ''}${n > 1 ? ' d' : ''}" title="Base: ${n}"></div>`;
+        return `<span class="rv-medal${n >= 1 ? ' f' : ''}${n > 1 ? ' d' : ''}" title="${c.label}: ${n}">${c.icon}</span>`;
+      }).join('');
+      return `<div class="ritem"><span class="rflag">${p.flag}</span><span class="rname">${p.name}</span><div class="rvars">${dots}</div></div>`;
+    }).join('');
+  };
+  el.innerHTML = section('En tu colección', conS) + section('Todavía faltan', sinS);
+}
+
+function renderIntercambio() {
+  const el = document.getElementById('sc-intercambio');
+  const conRep = PLAYERS.filter(p => COLORS.some(c => data[p.id][c.id] > 1));
+  if (!conRep.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-i">🔄</div><div class="empty-t">Cuando tengas figuritas repetidas, acá vas a ver cuáles podés intercambiar.</div></div>`;
+    return;
+  }
+  const totalRep = conRep.reduce((a, p) => a + COLORS.reduce((b, c) => b + Math.max(0, data[p.id][c.id] - 1), 0), 0);
+  const chips = [];
+  conRep.forEach(p => {
+    COLORS.filter(c => data[p.id][c.id] > 1).forEach(c => {
+      chips.push(`${p.flag} ${p.name} ${c.icon === 'dot' ? '🟣' : c.icon} ${c.label.toLowerCase()} ×${data[p.id][c.id] - 1}`);
+    });
+  });
+  const cards = conRep.map(p => {
+    const rows = COLORS.filter(c => data[p.id][c.id] > 1).map(c => {
+      const ico = c.icon === 'dot' ? '🟣' : c.icon;
+      return `<div class="irow"><span style="font-size:16px">${ico}</span><span class="iclbl">${c.label}</span><span class="icnt">×${data[p.id][c.id]}</span><span class="iext">(${data[p.id][c.id] - 1} para intercambio)</span></div>`;
+    }).join('');
+    return `<div class="icard"><div class="ihead"><span style="font-size:18px">${p.flag}</span><span class="iname">${p.name}</span></div>${rows}</div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="sec-title">${totalRep} repetida${totalRep !== 1 ? 's' : ''} para intercambiar</div>
+    <div class="chips">${chips.map(ch => `<span class="chip">${ch}</span>`).join('')}</div>
+    <button class="copy-btn" id="copy-btn">📋 COPIAR LISTA PARA WHATSAPP</button>
+    <div class="copy-ok" id="copy-ok">✓ Lista copiada</div>
+    ${cards}`;
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    const txt = '🌍 *Extra Stickers Panini Mundial 2026*\n🔄 *Tengo para intercambiar:*\n' + chips.map(c => `  • ${c}`).join('\n');
+    navigator.clipboard.writeText(txt).then(() => {
+      const ok = document.getElementById('copy-ok');
+      if (ok) { ok.style.display = 'block'; setTimeout(() => { ok.style.display = 'none'; }, 2000); }
+    }).catch(() => {});
+  });
+}
+
+function renderScreen(name, resetScroll) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById('sc-' + name).classList.add('on');
+  if (name === 'coleccion')   renderColeccion();
+  if (name === 'resumen')     renderResumen();
+  if (name === 'intercambio') renderIntercambio();
+  const scrollEl = document.getElementById('scroll');
+  scrollEl.scrollTop = resetScroll ? 0 : savedScroll;
+}
+
+function renderAll(preserveScroll) {
+  // Capturar scroll antes de renderizar
+  if (preserveScroll) savedScroll = document.getElementById('scroll').scrollTop;
+  renderStats();
+  renderScreen(activeTab, !preserveScroll);
+  // Restaurar scroll después de renderizar
+  if (preserveScroll) document.getElementById('scroll').scrollTop = savedScroll;
+}
+
+// Contadores — event delegation
+document.getElementById('sc-coleccion').addEventListener('click', e => {
+  const btn = e.target.closest('[data-p]');
+  if (!btn) return;
+  savedScroll = document.getElementById('scroll').scrollTop;
+  const { p, c, d } = btn.dataset;
+  data[p][c] = Math.max(0, data[p][c] + parseInt(d));
+  saveData();
+  renderStats();
+  renderColeccion();
+  document.getElementById('scroll').scrollTop = savedScroll;
+});
+
+// Bottom tabs
+document.querySelectorAll('.btab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeTab = btn.dataset.tab;
+    document.querySelectorAll('.btab').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('filters').style.display = activeTab === 'coleccion' ? 'flex' : 'none';
+    savedScroll = 0;
+    renderStats();
+    renderScreen(activeTab, true);
+  });
+});
+
+// Filtros
+document.querySelectorAll('.ftab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeFilter = btn.dataset.f;
+    document.querySelectorAll('.ftab').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    savedScroll = 0;
+    renderColeccion();
+    document.getElementById('scroll').scrollTop = 0;
+  });
+});
+
+// Init
+data = loadData();
+renderStats();
+renderScreen('coleccion', true);
+</script>
+<script>
+  // Desregistrar cualquier service worker previo que pueda interferir con los datos
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    });
+  }
+</script>
+</body>
+</html>
