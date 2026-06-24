@@ -107,6 +107,11 @@
     .empty-i{font-size:46px;margin-bottom:12px}
     .empty-t{font-size:13px;line-height:1.6}
     .screen{display:none}.screen.on{display:block}
+
+    .share-btn{width:34px;height:34px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--accent);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+    .share-btn:active{transform:scale(.88)}
+    .readonly-banner{margin-top:10px;padding:7px 12px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.4);border-radius:8px;font-size:12px;color:var(--base-color);text-align:center;font-weight:500}
+    .cbtn.readonly-disabled{opacity:.15;cursor:default;pointer-events:none}
   </style>
 </head>
 <body>
@@ -114,8 +119,12 @@
   <div class="header">
     <div class="hrow1">
       <div><div class="htitle">Extra Stickers</div><div class="hsub">Panini · Mundial 2026</div></div>
-      <div><div class="hpct-num" id="hpct">0%</div><div class="hpct-lbl">completado</div></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="share-link-btn" class="share-btn" title="Compartir colección">🔗</button>
+        <div><div class="hpct-num" id="hpct">0%</div><div class="hpct-lbl">completado</div></div>
+      </div>
     </div>
+    <div id="readonly-banner" class="readonly-banner" style="display:none">👀 Viendo una colección compartida</div>
     <div class="stats">
       <div class="stat"><div class="stat-n n-green" id="s-tengo">0</div><div class="stat-l">Tengo</div></div>
       <div class="stat"><div class="stat-n n-muted" id="s-faltan">80</div><div class="stat-l">Faltan</div></div>
@@ -180,6 +189,7 @@ let data = {};
 let activeTab = 'coleccion';
 let activeFilter = 'todos';
 let savedScroll = 0;
+let isReadOnly = false;
 
 function buildEmpty() {
   const d = {};
@@ -207,6 +217,50 @@ function loadData() {
 
 function saveData() {
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {}
+}
+
+// ── COMPARTIR (modo solo lectura) ──────────────────────────────────────────
+// Codifica los 80 contadores (20 jugadores × 4 colores) como una cadena
+// compacta: cada valor 0-9 se mapea a un dígito en base36, concatenados.
+// Orden fijo: sigue el orden de PLAYERS y COLORS.
+function encodeShareData() {
+  let str = '';
+  PLAYERS.forEach(p => COLORS.forEach(c => {
+    const n = Math.min(data[p.id][c.id], 35); // cap defensivo, base36 = 0-35
+    str += n.toString(36);
+  }));
+  return str;
+}
+
+function decodeShareData(str) {
+  const d = buildEmpty();
+  let i = 0;
+  PLAYERS.forEach(p => COLORS.forEach(c => {
+    const ch = str[i];
+    if (ch !== undefined) {
+      const n = parseInt(ch, 36);
+      if (!isNaN(n)) d[p.id][c.id] = n;
+    }
+    i++;
+  }));
+  return d;
+}
+
+function checkReadOnlyMode() {
+  const hash = window.location.hash;
+  const match = hash.match(/data=([a-z0-9]+)/i);
+  if (match) {
+    isReadOnly = true;
+    data = decodeShareData(match[1]);
+    document.getElementById('readonly-banner').style.display = 'block';
+    document.getElementById('share-link-btn').style.display = 'none';
+  }
+}
+
+function generateShareLink() {
+  const encoded = encodeShareData();
+  const base = window.location.origin + window.location.pathname;
+  return `${base}#data=${encoded}`;
 }
 
 const stateOf = n => n === 0 ? 'miss' : n === 1 ? 'have' : 'dup';
@@ -289,14 +343,16 @@ function renderColeccion() {
       const st = stateOf(n);
       const badge = st === 'miss' ? 'Falta' : st === 'have' ? 'Tengo 1' : `×${n}`;
       const plusCls = st === 'miss' ? 'plus-miss' : st === 'have' ? 'plus-have' : 'plus-dup';
+      const roCls = isReadOnly ? ' readonly-disabled' : '';
+      const minusDisabled = (n === 0 || isReadOnly);
       return `<div class="srow ${st}">
         ${iconHtml(c, st)}
         <span class="clbl ${st}">${c.label}</span>
         <span class="badge ${st}">${badge}</span>
         <div class="ctr">
-          <button class="cbtn minus" ${n === 0 ? 'disabled' : ''} data-p="${p.id}" data-c="${c.id}" data-d="-1">−</button>
+          <button class="cbtn minus${roCls}" ${minusDisabled ? 'disabled' : ''} data-p="${p.id}" data-c="${c.id}" data-d="-1">−</button>
           <span class="cval ${st}">${n}</span>
-          <button class="cbtn ${plusCls}" data-p="${p.id}" data-c="${c.id}" data-d="1">+</button>
+          <button class="cbtn ${plusCls}${roCls}" ${isReadOnly ? 'disabled' : ''} data-p="${p.id}" data-c="${c.id}" data-d="1">+</button>
         </div>
       </div>`;
     }).join('');
@@ -402,6 +458,7 @@ function renderAll(preserveScroll) {
 
 // Contadores — event delegation
 document.getElementById('sc-coleccion').addEventListener('click', e => {
+  if (isReadOnly) return;
   const btn = e.target.closest('[data-p]');
   if (!btn) return;
   savedScroll = document.getElementById('scroll').scrollTop;
@@ -439,7 +496,21 @@ document.querySelectorAll('.ftab').forEach(btn => {
 });
 
 // Init
+// Init
 data = loadData();
+checkReadOnlyMode(); // sobreescribe `data` si hay #data= en la URL, sin tocar localStorage
+
+const shareLinkBtn = document.getElementById('share-link-btn');
+if (shareLinkBtn) {
+  shareLinkBtn.addEventListener('click', () => {
+    const link = generateShareLink();
+    navigator.clipboard.writeText(link).then(() => {
+      shareLinkBtn.textContent = '✓';
+      setTimeout(() => { shareLinkBtn.textContent = '🔗'; }, 2000);
+    }).catch(() => {});
+  });
+}
+
 renderStats();
 renderScreen('coleccion', true);
 </script>
