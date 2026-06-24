@@ -301,9 +301,18 @@ function iconHtml(color, st) {
 
 function filteredPlayers() {
   if (activeFilter === 'tengo')  return PLAYERS.filter(p => COLORS.some(c => data[p.id][c.id] >= 1));
-  if (activeFilter === 'faltan') return PLAYERS.filter(p => COLORS.every(c => data[p.id][c.id] === 0));
+  if (activeFilter === 'faltan') return PLAYERS.filter(p => COLORS.some(c => data[p.id][c.id] === 0));
   if (activeFilter === 'dup')    return PLAYERS.filter(p => COLORS.some(c => data[p.id][c.id] > 1));
   return PLAYERS;
+}
+
+// Devuelve qué variantes (COLORS) mostrar dentro de la card de un jugador,
+// según el filtro activo. 'todos' y 'tengo' muestran las 4 siempre.
+// 'faltan' muestra solo las que están en 0. 'dup' muestra solo las > 1.
+function visibleColorsFor(playerId) {
+  if (activeFilter === 'faltan') return COLORS.filter(c => data[playerId][c.id] === 0);
+  if (activeFilter === 'dup')    return COLORS.filter(c => data[playerId][c.id] > 1);
+  return COLORS;
 }
 
 function buildMissingChips(players) {
@@ -338,7 +347,7 @@ function renderColeccion() {
     const summ = total === 0
       ? `<span style="color:var(--muted)">Sin stickers</span>`
       : `${haveCount > 0 ? `<div style="color:var(--have-txt)">${haveCount}/4 variantes</div>` : ''}${dupCount > 0 ? `<div style="color:var(--dup-txt)">${dupCount} repetida${dupCount > 1 ? 's' : ''}</div>` : ''}`;
-    const rows = COLORS.map(c => {
+    const rows = visibleColorsFor(p.id).map(c => {
       const n = data[p.id][c.id];
       const st = stateOf(n);
       const badge = st === 'miss' ? 'Falta' : st === 'have' ? 'Tengo 1' : `×${n}`;
