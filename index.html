@@ -252,6 +252,23 @@ function filteredPlayers() {
   return PLAYERS;
 }
 
+function buildMissingChips(players) {
+  const chips = [];
+  players.forEach(p => {
+    COLORS.filter(c => data[p.id][c.id] === 0).forEach(c => {
+      chips.push(`${p.flag} ${p.name} ${c.icon === 'dot' ? '🟣' : c.icon} ${c.label.toLowerCase()}`);
+    });
+  });
+  return chips;
+}
+
+function shareButtonHtml(filter, players) {
+  if (filter !== 'faltan' || !players.length) return '';
+  return `
+    <button class="copy-btn" id="copy-faltan-btn">📋 COPIAR LISTA DE LO QUE ME FALTA</button>
+    <div class="copy-ok" id="copy-faltan-ok">✓ Lista copiada</div>`;
+}
+
 function renderColeccion() {
   const el = document.getElementById('sc-coleccion');
   const players = filteredPlayers();
@@ -259,7 +276,8 @@ function renderColeccion() {
     el.innerHTML = `<div class="empty"><div class="empty-i">🔍</div><div class="empty-t">No hay figuritas en este filtro todavía.</div></div>`;
     return;
   }
-  el.innerHTML = players.map(p => {
+  const shareHtml = shareButtonHtml(activeFilter, players);
+  el.innerHTML = shareHtml + players.map(p => {
     const haveCount = COLORS.filter(c => data[p.id][c.id] >= 1).length;
     const dupCount  = COLORS.filter(c => data[p.id][c.id] > 1).length;
     const total     = COLORS.reduce((a, c) => a + data[p.id][c.id], 0);
@@ -291,6 +309,18 @@ function renderColeccion() {
       <div class="srows">${rows}</div>
     </div>`;
   }).join('');
+
+  const shareBtn = document.getElementById('copy-faltan-btn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', () => {
+      const chips = buildMissingChips(players);
+      const txt = '🌍 *Extra Stickers Panini Mundial 2026*\n❌ *Me faltan:*\n' + chips.map(c => `  • ${c}`).join('\n');
+      navigator.clipboard.writeText(txt).then(() => {
+        const ok = document.getElementById('copy-faltan-ok');
+        if (ok) { ok.style.display = 'block'; setTimeout(() => { ok.style.display = 'none'; }, 2000); }
+      }).catch(() => {});
+    });
+  }
 }
 
 function renderResumen() {
